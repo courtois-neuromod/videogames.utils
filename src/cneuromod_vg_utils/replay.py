@@ -1,6 +1,7 @@
 import retro
 import logging
 from retro.enums import State
+import os.path as op
 
 def replay_bk2(
     bk2_path, skip_first_step=False, state=State.DEFAULT, game=None, scenario=None, inttype=retro.data.Integrations.CUSTOM_ONLY
@@ -46,3 +47,69 @@ def replay_bk2(
     emulator.close()
     movie.close()
 
+def get_variables_from_replay(
+    bk2_fpath,
+    skip_first_step=True,
+    state=State.DEFAULT,
+    game=None,
+    scenario=None,
+    inttype=retro.data.Integrations.CUSTOM_ONLY,
+):
+    """Replay the bk2 file and return game variables and frames."""
+    replay = replay_bk2(
+        bk2_fpath,
+        skip_first_step=skip_first_step,
+        state=state,
+        game=game,
+        scenario=scenario,
+        inttype=inttype,
+    )
+    replay_frames = []
+    replay_keys = []
+    replay_info = []
+    replay_states = []
+    annotations = {}
+
+    for frame, keys, annotations, _, actions, state in replay:
+        replay_keys.append(keys)
+        replay_info.append(annotations["info"])
+        replay_frames.append(frame)
+        replay_states.append(state)
+
+    repetition_variables = reformat_info(replay_info, replay_keys, bk2_fpath, actions)
+
+    if not annotations.get("done", False):
+        logging.warning(
+            f"Done condition not satisfied for {bk2_fpath}. Consider changing skip_first_step."
+        )
+    return repetition_variables, replay_info, replay_frames, replay_states
+
+def reformat_info(info, keys, bk2_fpath, actions):
+    """Create a structured dictionary from replay info."""
+    filename = op.basename(bk2_fpath)
+    entities = filename.split("_")
+    entities_dict = {}
+    for ent in entities:
+        if "-" in ent:
+            key, value = ent.split("-", 1)
+            entities_dict[key] = value
+
+    repetition_variables = {
+        "filename": bk2_fpath,
+        "level": entities_dict.get("level"),
+        "subject": entities_dict.get("sub"),
+        "session": entities_dict.get("ses"),
+        "actions": actions,
+    }
+
+    for key in info[0].keys():
+        repetition_variables[key] = []
+    for button in actions:
+        repetition_variables[button] = []
+
+    for frame_idx, frame_info in enumerate(info):
+        for key in frame_info.keys():
+            repetition_variables[key].append(frame_info[key])
+        for button_idx, button in enumerate(actions):
+            repetition_variables[button].append(keys[frame_idx][button_idx])
+    return repetition_variables
