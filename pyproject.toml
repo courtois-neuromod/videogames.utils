@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cneuromod_vg_utils"
+version = "0.1.0"
+description = "Utilities for CNeuroMod videogame data"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "CNeuroMod" }]
+dependencies = [
+    "stable-retro",
+    "numpy",
+    "Pillow",
+    "scikit-video",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
