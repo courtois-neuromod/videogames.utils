@@ -157,8 +157,8 @@ class GlassBrainWidget(QWidget):
         self.setLayout(layout)
 
     def load_timeseries(self, h5_path: Path, atlas_path: Path,
-                       session: str, run: int, onset_time: float, fps: int = 60,
-                       replay_duration: float = None):
+                       session: str, run: int, onset_time: float, task: str,
+                       fps: int = 60, replay_duration: float = None):
         """
         Load timeseries data and atlas
 
@@ -168,6 +168,7 @@ class GlassBrainWidget(QWidget):
             session: Session ID (e.g., '001')
             run: Run number (e.g., 1)
             onset_time: Onset time of replay within the run (seconds)
+            task: Task name (e.g., 'mario', 'shinobi')
             fps: Frames per second for the replay
             replay_duration: Duration of the replay in seconds (optional, for limiting TR computation)
         """
@@ -190,7 +191,7 @@ class GlassBrainWidget(QWidget):
 
             # Load timeseries from HDF5
             self.h5_path = h5_path
-            dataset_key = f"ses-{session}/ses-{session}_task-mario_run-{run}_timeseries"
+            dataset_key = f"ses-{session}/ses-{session}_task-{task}_run-{run}_timeseries"
 
             with h5py.File(h5_path, 'r') as f:
                 if dataset_key not in f:

@@ -264,7 +264,8 @@ class ReplayVisualizerApp(QMainWindow):
                 
                 try:
                     self.glassbrain_widget.load_timeseries(
-                        h5_path, atlas_path, session, run, onset_time, fps=60,
+                        h5_path, atlas_path, session, run, onset_time,
+                        task=replay_info['task'], fps=60,
                         replay_duration=replay_duration
                     )
                     self.status_bar.showMessage("Brain timeseries loaded successfully")
