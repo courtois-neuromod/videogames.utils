@@ -1,18 +1,20 @@
-# CNeuroMod Videogame Utils
+# videogames_utils
 
-Utilities for processing and analyzing CNeuroMod videogame data, including replay file processing, psychophysics measurements, and video generation.
+Utilities for processing and analyzing CNeuroMod videogame data, including replay file processing, psychophysics measurements, video generation, and an interactive GUI for exploring datasets.
+
+![GUI Screenshot](src/videogames_utils/gui/resources/GUI_screenshot.png)
 
 ## Installation
 
 ```bash
-pip install git+https://github.com/cneuromod/videogames.utils.git
+pip install git+https://github.com/cneuromod/videogames_utils.git
 ```
 
 Or install from source:
 
 ```bash
-git clone https://github.com/cneuromod/videogames.utils.git
-cd videogames.utils
+git clone https://github.com/cneuromod/videogames_utils.git
+cd videogames_utils
 pip install -e .
 ```
 
@@ -32,7 +34,7 @@ pip install -e .
 Process and analyze BK2 replay files from retro game emulators:
 
 ```python
-from cneuromod_vg_utils import replay_bk2
+from videogames_utils import replay_bk2
 
 # Iterate through a replay file
 for frame, keys, annotations, audio_chunk, audio_rate, truncate, actions, state in replay_bk2('replay.bk2'):
@@ -45,7 +47,7 @@ for frame, keys, annotations, audio_chunk, audio_rate, truncate, actions, state 
 Extract complete replay data:
 
 ```python
-from cneuromod_vg_utils.replay import get_variables_from_replay
+from videogames_utils.replay import get_variables_from_replay
 
 # Get all replay data at once
 rep_vars, info, frames, states, audio, audio_rate = get_variables_from_replay(
@@ -60,7 +62,7 @@ rep_vars, info, frames, states, audio, audio_rate = get_variables_from_replay(
 Export audio from replay files:
 
 ```python
-from cneuromod_vg_utils.replay import write_wav
+from videogames_utils.replay import write_wav
 
 # Write audio to WAV file
 write_wav(audio, audio_rate, 'output.wav')
@@ -71,7 +73,7 @@ write_wav(audio, audio_rate, 'output.wav')
 Compute psychophysical measures from video and audio data:
 
 ```python
-from cneuromod_vg_utils.psychophysics import (
+from videogames_utils.psychophysics import (
     audio_envelope_per_frame,
     compute_luminance,
     compute_optical_flow
@@ -92,7 +94,7 @@ flow = compute_optical_flow(frames)
 Create video files from frame sequences:
 
 ```python
-from cneuromod_vg_utils.video import make_mp4, make_gif, make_webp
+from videogames_utils.video import make_mp4, make_gif, make_webp
 
 # Create MP4 with audio
 make_mp4(frames, 'output.mp4', audio=audio, sample_rate=32040, fps=60)
@@ -103,6 +105,24 @@ make_gif(frames, 'output.gif')
 # Create WebP animation
 make_webp(frames, 'output.webp')
 ```
+
+### GUI Visualizer
+
+An interactive tool for exploring CNeuroMod videogame datasets with synchronized visualization of gameplay, brain activity, and physiological signals.
+
+```bash
+vg-visualizer
+```
+
+Features:
+- **Replay Browser**: Browse datasets (mario, shinobi, mario3, mariostars) and select replays
+- **Video Playback**: Play, pause, forward, backward controls with frame slider
+- **Controller Display**: Visual representation of button presses in real-time
+- **Game Variables**: Display variables as scrolling timeseries
+- **Brain Activity Visualization**: Glass brain plots showing parcellated brain activity
+- **Physiological Data Visualization**: Scrolling physio timeseries display (PPG, ECG, RSP, EDA)
+
+For detailed usage instructions, see [GUI_README.md](GUI_README.md).
 
 ## Module Overview
 

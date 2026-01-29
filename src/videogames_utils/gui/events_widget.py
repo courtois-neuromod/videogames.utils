@@ -101,6 +101,32 @@ class EventsWidget(QWidget):
         # Update display
         self.update_events_display()
 
+    def get_event_color(self, event_type: str) -> QColor:
+        """
+        Get color based on event type
+
+        Args:
+            event_type: The type of event
+
+        Returns:
+            QColor for the event type
+        """
+        # Directions (RIGHT, LEFT, UP, DOWN)
+        if any(d in event_type for d in ['RIGHT', 'LEFT', 'UP', 'DOWN']):
+            return QColor(255, 200, 100)  # Orange for directions
+        # Damage/health loss events (Hit/something, HealthLoss)
+        elif event_type.startswith('Hit/') or 'HealthLoss' in event_type:
+            return QColor(255, 100, 100)  # Red for damage/health loss
+        # Kill events
+        elif event_type.startswith('Kill') or event_type.startswith('Kill/'):
+            return QColor(255, 150, 0)  # Orange-red for kills
+        # Actions in full caps (e.g., JUMP, HIT, A, B)
+        elif event_type.isupper():
+            return QColor(100, 200, 255)  # Blue for actions
+        # Other events
+        else:
+            return QColor(150, 255, 150)  # Light green for other events
+
     def update_events_display(self):
         """Update the events list display"""
         self.events_list.clear()
@@ -114,7 +140,8 @@ class EventsWidget(QWidget):
         for event in self.active_events:
             text = f"{event['type']} ({event['time_in_event']:.2f}s / {event['duration']:.2f}s)"
             item = QListWidgetItem(text)
-            item.setForeground(QColor(100, 255, 100))
+            color = self.get_event_color(event['type'])
+            item.setForeground(color)
             self.events_list.addItem(item)
 
     def get_event_markers(self) -> List[Dict]:
