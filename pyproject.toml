@@ -24,6 +24,7 @@ dependencies = [
     "nibabel",
     "nilearn",
     "matplotlib",
+    "tqdm",
 ]
 
 [tool.setuptools]
@@ -34,3 +35,4 @@ where = ["src"]
 
 [project.scripts]
 vg-visualizer = "videogames_utils.gui:main"
+vg-generate-recording = "videogames_utils.generate_run_recording:main"

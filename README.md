@@ -106,6 +106,36 @@ make_gif(frames, 'output.gif')
 make_webp(frames, 'output.webp')
 ```
 
+### Run Recording Generation
+
+Generate video recordings aligned with BOLD acquisition from events files. This tool reads `*_events.tsv` files, replays the corresponding `.bk2` files, and creates a single video per run that aligns with the fMRI timing (with black frames filling gaps between game replays).
+
+```bash
+# Process all runs in a dataset (using all CPUs)
+vg-generate-recording mario/ -j -1
+
+# Process a single run
+vg-generate-recording mario/sub-01/ses-001/func/sub-01_ses-001_task-mario_run-01_desc-annotated_events.tsv
+
+# With verbose output
+vg-generate-recording mario/ -v
+
+# Save alignment reports to a directory
+vg-generate-recording mario/ -j -1 --report-dir ./reports
+
+# Without audio
+vg-generate-recording mario/ -j -1 --no-audio
+```
+
+The output videos are saved in the same `func/` directory as the events files, with the naming pattern `sub-XX_ses-XXX_task-TASK_run-XX_recording.mp4`.
+
+**Options:**
+- `-j N, --jobs N`: Number of parallel workers (use `-1` for all CPUs)
+- `-v, --verbose`: Show detailed logging output
+- `--no-audio`: Generate video without audio
+- `--report-dir DIR`: Save alignment reports to specified directory
+- `--fps N`: Frames per second (default: 60)
+
 ### GUI Visualizer
 
 An interactive tool for exploring CNeuroMod videogame datasets with synchronized visualization of gameplay, brain activity, and physiological signals.
@@ -151,6 +181,25 @@ Video file generation utilities:
 - `make_mp4()` - Create MP4 files with optional audio
 - `make_gif()` - Create GIF animations
 - `make_webp()` - Create WebP animations
+
+### `generate_run_recording.py`
+
+Generate BOLD-aligned video recordings from events files:
+
+- `generate_aligned_recording()` - Main function to create aligned recordings
+- `find_all_events_files()` - Find events files in a dataset
+- `StreamingVideoWriter` - Memory-efficient video writer class
+
+```python
+from videogames_utils import generate_aligned_recording
+
+# Generate a recording for a single run
+report = generate_aligned_recording(
+    events_path="mario/sub-01/ses-001/func/sub-01_ses-001_task-mario_run-01_desc-annotated_events.tsv",
+    fps=60,
+    include_audio=True
+)
+```
 
 ## CNeuroMod Integration
 
