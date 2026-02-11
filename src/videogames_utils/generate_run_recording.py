@@ -814,6 +814,108 @@ def format_report(report: Dict) -> str:
     return "\n".join(lines)
 
 
+def generate_summary_report(
+    all_reports: List[Dict],
+    errors: List[Tuple[Path, str]],
+    output_path: Path
+) -> None:
+    """
+    Generate a consolidated TSV summary report for all processed files.
+
+    Args:
+        all_reports: List of report dictionaries from successful processing
+        errors: List of (events_path, error_message) tuples for failed files
+        output_path: Path to save the TSV report
+    """
+    # Build rows for TSV
+    rows = []
+
+    # Process successful reports
+    for report in all_reports:
+        events_file = Path(report['events_file'])
+        # Extract subject/session from path
+        parts = events_file.parts
+        sub = next((p for p in parts if p.startswith('sub-')), '')
+        ses = next((p for p in parts if p.startswith('ses-')), '')
+
+        # Determine status
+        if report['errors']:
+            status = 'PARTIAL'
+        elif not report['frame_count_match']:
+            status = 'WARNING'
+        else:
+            status = 'OK'
+
+        # Count trials with issues
+        n_trials = len(report['trials'])
+        trials_with_mismatch = sum(
+            1 for t in report['trials']
+            if abs(t.get('duration_diff_s', 0)) > 0.1
+        )
+
+        # Get first error/warning if any
+        first_issue = ''
+        if report['errors']:
+            first_issue = report['errors'][0]
+        elif report['warnings']:
+            first_issue = report['warnings'][0]
+
+        rows.append({
+            'subject': sub,
+            'session': ses,
+            'events_file': events_file.name,
+            'status': status,
+            'target_duration_s': f"{report['target_duration_s']:.2f}",
+            'generated_duration_s': f"{report['generated_duration_s']:.2f}",
+            'duration_diff_s': f"{report['duration_diff_s']:+.3f}",
+            'n_trials': n_trials,
+            'trials_with_mismatch': trials_with_mismatch,
+            'n_errors': len(report['errors']),
+            'n_warnings': len(report['warnings']),
+            'issue': first_issue[:100] if first_issue else ''
+        })
+
+    # Process failed files
+    for events_path, error_msg in errors:
+        parts = events_path.parts
+        sub = next((p for p in parts if p.startswith('sub-')), '')
+        ses = next((p for p in parts if p.startswith('ses-')), '')
+
+        # Extract first line of error
+        first_line = error_msg.split('\n')[0][:100]
+
+        rows.append({
+            'subject': sub,
+            'session': ses,
+            'events_file': events_path.name,
+            'status': 'FAILED',
+            'target_duration_s': '',
+            'generated_duration_s': '',
+            'duration_diff_s': '',
+            'n_trials': '',
+            'trials_with_mismatch': '',
+            'n_errors': 1,
+            'n_warnings': 0,
+            'issue': first_line
+        })
+
+    # Sort by subject, session
+    rows.sort(key=lambda r: (r['subject'], r['session']))
+
+    # Write TSV
+    df = pd.DataFrame(rows)
+    df.to_csv(output_path, sep='\t', index=False)
+
+    # Print summary statistics
+    n_ok = sum(1 for r in rows if r['status'] == 'OK')
+    n_warning = sum(1 for r in rows if r['status'] == 'WARNING')
+    n_partial = sum(1 for r in rows if r['status'] == 'PARTIAL')
+    n_failed = sum(1 for r in rows if r['status'] == 'FAILED')
+
+    print(f"\nSummary report saved to: {output_path}")
+    print(f"  OK: {n_ok}  |  WARNING: {n_warning}  |  PARTIAL: {n_partial}  |  FAILED: {n_failed}")
+
+
 def process_single_events_file(
     events_path: Path,
     output_path: Optional[Path],
@@ -998,6 +1100,20 @@ def main():
                         print(f"  - {events_path.name}: {error.split(chr(10))[0]}")
             else:
                 print()
+
+        # Generate consolidated summary report for multiple files
+        if len(events_files) > 1:
+            # Determine report path - use input directory or report_dir if specified
+            if args.report_dir:
+                report_path = args.report_dir / "recording_summary.tsv"
+                args.report_dir.mkdir(parents=True, exist_ok=True)
+            else:
+                # Save in the input directory
+                if args.input_path.is_file():
+                    report_path = args.input_path.parent / "recording_summary.tsv"
+                else:
+                    report_path = args.input_path / "recording_summary.tsv"
+            generate_summary_report(all_reports, errors, report_path)
 
     except FileNotFoundError as e:
         print(f"Error: {e}")
