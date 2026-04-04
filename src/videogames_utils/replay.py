@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os.path as op
+import warnings
 from typing import Iterable, List, Tuple
 
 import numpy as np
@@ -16,6 +17,7 @@ def replay_bk2(
     game: str | None = None,
     scenario: str | None = None,
     inttype: retro.data.Integrations = retro.data.Integrations.CUSTOM_ONLY,
+    check_done: bool = True,
 ) -> Iterable[Tuple[np.ndarray, List[bool], dict, np.ndarray, int, bool, List[str], bytes]]:
     """
     Create an iterator that replays a bk2 file.
@@ -27,6 +29,8 @@ def replay_bk2(
         game (str, optional): The name of the game. If None, inferred from bk2 file.
         scenario (str, optional): The scenario to be used in the emulator.
         inttype: The integration type for the emulator.
+        check_done (bool, optional): If True, emit a warning when the done condition is
+            never met, or when it is met but not on the last frame. Defaults to True.
 
     Yields:
         tuple: A tuple containing:
@@ -52,16 +56,25 @@ def replay_bk2(
         audio_rate = int(emulator.em.get_audio_rate())
         if skip_first_step:
             movie.step()
+        done_flags = []
         while movie.step():
             keys = []
             for p in range(movie.players):
                 for i in range(emulator.num_buttons):
                     keys.append(movie.get_key(i, p))
             frame, rew, terminate, truncate, info = emulator.step(keys)
+            done_flags.append(terminate)
             annotations = {"reward": rew, "done": terminate, "info": info}
             state = emulator.em.get_state()
             audio_chunk = emulator.em.get_audio().copy()
             yield frame, keys, annotations, audio_chunk, audio_rate, truncate, actions, state
+        if check_done and done_flags:
+            if not any(done_flags):
+                warnings.warn(f"Done condition was never met in {bk2_path}")
+            elif not done_flags[-1]:
+                warnings.warn(
+                    f"Done condition was met before the last frame but not on it in {bk2_path}"
+                )
     finally:
         if emulator is not None:
             emulator.close()
@@ -105,7 +118,7 @@ def get_variables_from_replay(
 
     for frame, keys, annotations, audio_chunk, chunk_rate, _, actions, state in replay:
         replay_keys.append(keys)
-        replay_info.append(annotations["info"])
+        replay_info.append({**annotations["info"], "done": annotations["done"]})
         replay_frames.append(frame)
         if audio_chunk.size:
             audio_chunks.append(audio_chunk)
